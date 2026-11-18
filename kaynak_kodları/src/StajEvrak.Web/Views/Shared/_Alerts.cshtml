@@ -1,0 +1,22 @@
+@* Hata pop-up'ı: sunucudan gelen hata (TempData) veya istemci tarafı kontrolü (showAlert). *@
+@{
+    var type = TempData[AlertExtensions.TypeKey] as string;
+    var title = TempData[AlertExtensions.TitleKey] as string;
+    var message = TempData[AlertExtensions.MessageKey] as string;
+    var show = type == "danger" && !string.IsNullOrEmpty(message);
+}
+<div class="modal fade" id="appAlert" tabindex="-1" aria-labelledby="appAlertTitle" aria-hidden="true"
+     data-auto-show="@(show ? "true" : "false")">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header alert-@(type ?? "danger")" id="appAlertHeader">
+                <h2 class="modal-title h5" id="appAlertTitle">@title</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body" id="appAlertBody">@message</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Tamam</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,52 @@
+@model ComparisonReport
+@* Kontrol raporu: Ek-16 formunun kendisi gibi; uyuşmayan hücrenin altı kırmızı çizili, yanında doğru değer. *@
+@{
+    var caption = Model.DocumentRead ? "Belgeden okunan değerler" : "Sisteme girilen değerler (belge okunamadı)";
+}
+
+@if (!string.IsNullOrEmpty(Model.DocumentNote) && !Model.DocumentRead)
+{
+    <div class="notice warn"><p>@Model.DocumentNote</p></div>
+}
+@if (!Model.HasDatasetRecord)
+{
+    <div class="notice warn"><p>Öğrenci okul veri setinde bulunamadı. Okul kaydıyla karşılaştırma yapılamadı.</p></div>
+}
+
+<div class="legend">
+    <span><i class="l-red"></i>Okul kaydı veya girilen bilgiyle uyuşmuyor</span>
+    <span><i class="l-amber"></i>Belgede boş bırakılmış</span>
+</div>
+
+<div class="sheet">
+    <div class="sheet-title">
+        <h2>Staj Kabul Formu (Ek-16)</h2>
+        <span>@caption</span>
+    </div>
+
+    @foreach (var section in Enum.GetValues<Ek16Section>())
+    {
+        <div class="sheet-section">@Ek16Fields.SectionTitle(section)</div>
+        <table class="form">
+            @foreach (var formRow in ReportPresenter.FormRows(Model, section))
+            {
+                <tr>
+                    @for (var i = 0; i < formRow.Count; i++)
+                    {
+                        var row = formRow[i];
+                        var cell = ReportPresenter.Cell(Model, row);
+                        var span = formRow.Count == 1 ? 3 : 1;
+                        <td class="lbl">@row.Field.Label</td>
+                        <td class="val @cell.CellCss" colspan="@span">
+                            <span class="@cell.ValueCss">@cell.Value</span>
+                            @if (cell.Note is not null)
+                            {
+                                <span class="note @(cell.QuietNote ? "quiet" : "")">@cell.Note</span>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    }
+</div>

@@ -1,0 +1,86 @@
+@model DocumentsViewModel
+@inject Microsoft.Extensions.Options.IOptions<StajEvrak.Application.Files.UploadOptions> UploadOptions
+@{
+    ViewData["Title"] = "Evrak yükle";
+    var app = Model.Application;
+    var allowed = string.Join(",", Model.AllowedExtensions);
+    var maxBytes = UploadOptions.Value.MaxFileSizeBytes;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Evrak yükle</h1>
+        <p class="meta">İşverene onaylatılmış Staj Kabul Formu (Ek-16)</p>
+    </div>
+    @if (app is not null) { <partial name="_StatusBadge" model="app.State" /> }
+</div>
+
+<div class="grid-aside">
+    <section class="panel">
+        @if (Model.CanUpload)
+        {
+            <form asp-action="Upload" method="post" enctype="multipart/form-data" id="uploadForm">
+                <label class="dropzone mb-3" data-dropzone>
+                    <input type="file" name="file" required accept="@allowed" data-allowed="@allowed" data-max-bytes="@maxBytes" />
+                    <span class="dz-title">Dosyayı buraya bırakın veya seçin</span>
+                    <span class="dz-hint">Word (.doc, .docx), PDF, JPEG veya PNG, en fazla @(maxBytes / 1048576) MB</span>
+                    <span class="dz-file" data-dz-file></span>
+                </label>
+                <button type="submit" class="btn btn-primary w-100">Evrak Yükle</button>
+            </form>
+            <ul class="small-note mt-3 mb-0 ps-3">
+                <li>Word (.docx) ve metin içeren PDF dosyaları otomatik okunur.</li>
+                <li>Fotoğraf ve taranmış belgeler final aşamasında OCR ile okunacak.</li>
+                <li>Her yükleme yeni bir sürüm olarak eklenir, öncekiler silinmez.</li>
+            </ul>
+        }
+        else
+        {
+            <h2 class="h3">Yeni belge yüklenemez</h2>
+            <p class="mb-0 muted">
+                Başvurunuz <strong>@app!.State.DisplayName.ToLower(StajEvrak.Application.Common.TextHelper.Turkish)</strong> durumda.
+                Bu aşamada belge yüklenemez, mevcut belgeler değiştirilemez veya silinemez.
+            </p>
+        }
+    </section>
+
+    <section class="panel panel-flush">
+        <div class="panel-head"><h2>Yüklenen sürümler</h2></div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th>Sürüm</th><th>Dosya</th><th>Yüklenme</th><th>Okuma</th><th></th></tr></thead>
+                <tbody>
+                    @if (app is null || app.Documents.Count == 0)
+                    {
+                        <tr class="empty-row"><td colspan="5">Henüz belge yüklemediniz.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var d in app.Documents.OrderByDescending(d => d.Version))
+                        {
+                            <tr>
+                                <td class="num">@d.Version.</td>
+                                <td>@d.OriginalFileName<div class="small-note">@d.SizeBytes.FileSize()</div></td>
+                                <td class="num">@d.UploadedAt.ToTr()</td>
+                                <td>@(d.AutoReadSupported ? "Otomatik" : "Okunmadı")</td>
+                                <td class="text-end">
+                                    <div class="btn-row justify-content-end">
+                                        <a class="btn btn-sm btn-secondary" asp-action="Download" asp-route-documentId="@d.Id">İndir</a>
+                                        @if (Model.CanUpload)
+                                        {
+                                            <form asp-action="Delete" method="post" data-confirm="@d.Version. sürüm silinsin mi?">
+                                                <input type="hidden" name="applicationId" value="@app.Id" />
+                                                <input type="hidden" name="documentId" value="@d.Id" />
+                                                <button class="btn btn-sm btn-danger-quiet" type="submit">Sil</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>

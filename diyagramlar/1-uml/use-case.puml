@@ -1,0 +1,29 @@
+@startuml use-case
+!include ../_style.iuml
+left to right direction
+
+actor "Öğrenci" as S
+actor "Admin" as A
+
+rectangle "Staj Evrak Doğrulama ve Yönetim Sistemi" {
+  usecase "Kayıt ol / Giriş yap" as Giris
+  usecase "Ek-16 bilgilerini gir" as Bilgi
+  usecase "Evrak yükle" as Yukle
+  usecase "Format kontrolü" as Format
+  usecase "Kontrol raporunu gör" as Rapor
+  usecase "Veri seti yükle" as Veri
+  usecase "Başvuruları incele\n(onayla / hatalı / tamamla)" as Incele
+  usecase "Kullanıcıları yönet" as Kullanici
+}
+
+S --> Giris
+S --> Bilgi
+S --> Yukle
+S --> Rapor
+Yukle ..> Format : <<include>>
+
+Giris <-- A
+Veri <-- A
+Incele <-- A
+Kullanici <-- A
+@enduml

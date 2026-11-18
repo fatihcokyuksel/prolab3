@@ -1,0 +1,51 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Hesap oluştur";
+}
+<div class="auth wide">
+    <h1>Öğrenci hesabı oluştur</h1>
+    <p class="intro">Öğrenci numaranız veya e-postanız okul kayıtlarında varsa hesabınız otomatik olarak eşleşir.</p>
+
+    <div class="panel">
+        <form asp-action="Register" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="form-errors" role="alert"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="FullName" class="form-label"></label>
+                    <input asp-for="FullName" class="form-control" autocomplete="name" />
+                    <span asp-validation-for="FullName" class="field-error small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="StudentNo" class="form-label"></label>
+                    <input asp-for="StudentNo" class="form-control" inputmode="numeric" maxlength="15" data-digits />
+                    <span asp-validation-for="StudentNo" class="field-error small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="UserName" class="form-label"></label>
+                    <input asp-for="UserName" class="form-control" autocomplete="username" />
+                    <span asp-validation-for="UserName" class="field-error small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control" autocomplete="email" />
+                    <span asp-validation-for="Email" class="field-error small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Password" class="form-label"></label>
+                    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                    <div class="form-text">En az 8 karakter, en az bir harf ve bir rakam.</div>
+                    <span asp-validation-for="Password" class="field-error small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="ConfirmPassword" class="form-label"></label>
+                    <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="ConfirmPassword" class="field-error small"></span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-4">Hesabı oluştur</button>
+        </form>
+    </div>
+    <p class="switch">Hesabınız var mı? <a asp-action="Login">Giriş yapın</a></p>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

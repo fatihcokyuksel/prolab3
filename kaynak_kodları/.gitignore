@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+TestResults/
+
+# Çalışma zamanı verisi (veritabanı ve yüklenen dosyalar)
+src/StajEvrak.Web/App_Data/
+
+# Diyagram üretim aracı (README'deki komutla indirilir)
+tools/plantuml.jar

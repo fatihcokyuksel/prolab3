@@ -1,0 +1,9 @@
+@{
+    var code = ViewData["Code"] as int? ?? 0;
+    ViewData["Title"] = code == 404 ? "Sayfa bulunamadı" : "Hata";
+}
+<div class="auth">
+    <h1>@(code == 404 ? "Sayfa bulunamadı" : "Bir sorun oluştu")</h1>
+    <p class="intro">@(code == 404 ? "Adres yanlış yazılmış veya sayfa kaldırılmış olabilir." : "İstek tamamlanamadı.") (Hata kodu @code)</p>
+    <a class="btn btn-primary" href="/">Ana sayfaya dön</a>
+</div>

@@ -1,0 +1,127 @@
+@model ProfileViewModel
+@{
+    ViewData["Title"] = "Ek-16 bilgilerim";
+    var disabled = !Model.CanEdit;
+    string DateValue(string? v) => StajEvrak.Application.Common.TextHelper.ParseDate(v)?.ToString("yyyy-MM-dd") ?? "";
+    var countries = StajEvrak.Application.Validation.PhoneNumber.Countries
+        .Select(c => new { code = c.Code, name = c.Country, min = c.MinDigits, max = c.MaxDigits });
+}
+
+<datalist id="nationalities">
+    <option value="T.C."></option>
+    @foreach (var c in StajEvrak.Application.Validation.PhoneNumber.Countries.Where(c => c.Code != "90"))
+    {
+        <option value="@c.Country"></option>
+    }
+</datalist>
+<script type="application/json" id="country-codes">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(countries))</script>
+
+<div class="page-head">
+    <div>
+        <h1>Ek-16 bilgilerim</h1>
+        <p class="meta">Staj Kabul Formu'na yazdığınız bilgileri girin. Yüklediğiniz belge bu bilgilerle karşılaştırılır.</p>
+    </div>
+</div>
+
+@if (disabled)
+{
+    <div class="notice done"><p>Başvurunuz onaylandığı için bilgiler yalnızca görüntülenebilir.</p></div>
+}
+
+<form asp-action="Index" method="post">
+    <fieldset disabled="@disabled">
+        <div class="sheet">
+            <div class="sheet-title">
+                <h2>Staj Kabul Formu (Ek-16)</h2>
+                <span>İsteğe bağlı alanlar belirtilmiştir</span>
+            </div>
+            @foreach (var section in Enum.GetValues<Ek16Section>())
+            {
+                <div class="sheet-section">@Ek16Fields.SectionTitle(section)</div>
+                <div class="row g-3 mb-2">
+                    @foreach (var f in Ek16Fields.InSection(section))
+                    {
+                        var name = $"values[{f.Code}]";
+                        var id = $"f_{f.Code}";
+                        var value = Model.Get(f.Code);
+                        var wide = ReportPresenter.IsWide(f.Code);
+                        var error = Model.Error(f.Code);
+                        var invalid = error is null ? "" : " is-invalid";
+                        var describedBy = error is null ? null : $"{id}_err";
+                        <div class="@(wide ? "col-12" : "col-md-6 col-lg-4")">
+                            <label class="form-label" for="@id">@f.Label@(f.Required ? "" : " (isteğe bağlı)")</label>
+                            @switch (f.Kind)
+                            {
+                                case FieldKind.Date:
+                                    <input type="date" class="form-control@(invalid)" aria-describedby="@describedBy" id="@id" name="@name" value="@DateValue(value)" />
+                                    break;
+                                case FieldKind.YesNo:
+                                    <select class="form-select" id="@id" name="@name">
+                                        <option value="">Seçin</option>
+                                        <option value="E" selected="@(value == "E")">Evet</option>
+                                        <option value="H" selected="@(value == "H")">Hayır</option>
+                                    </select>
+                                    break;
+                                case FieldKind.Choice:
+                                    <select class="form-select" id="@id" name="@name">
+                                        <option value="">Seçin</option>
+                                        @foreach (var o in ReportPresenter.HealthOptions)
+                                        {
+                                            <option value="@o.Key" selected="@(value == o.Key)">@o.Value</option>
+                                        }
+                                    </select>
+                                    break;
+                                case FieldKind.Email:
+                                    <input type="email" class="form-control@(invalid)" aria-describedby="@describedBy" id="@id" name="@name" value="@value" maxlength="200" placeholder="ad@alanadi.uzanti" />
+                                    break;
+                                case FieldKind.Phone:
+                                    var (country, national) = StajEvrak.Application.Validation.PhoneNumber.Split(value);
+                                    <div class="phone-input@(invalid)" data-phone>
+                                        <button type="button" class="phone-cc" aria-haspopup="listbox" aria-expanded="false"
+                                                aria-label="Ülke kodu: @country.Country +@country.Code. Değiştirmek için tıklayın" title="@country.Country">+@country.Code</button>
+                                        <input type="hidden" name="phoneCodes[@f.Code]" value="@country.Code" data-phone-code />
+                                        <input type="tel" inputmode="numeric" autocomplete="tel-national" class="form-control@(invalid)" aria-describedby="@describedBy"
+                                               id="@id" name="@name" value="@national" data-digits
+                                               maxlength="@country.MaxDigits" data-min="@country.MinDigits"
+                                               placeholder="@(country.Code == "90" ? "5321234567" : "")" />
+                                    </div>
+                                    break;
+                                case FieldKind.NationalId:
+                                    <input type="text" inputmode="numeric" autocomplete="off" class="form-control@(invalid)" aria-describedby="@describedBy"
+                                           id="@id" name="@name" value="@value" data-digits data-tc
+                                           maxlength="@StajEvrak.Application.Validation.NationalIdValidator.Length" placeholder="11 haneli" />
+                                    break;
+                                case FieldKind.Number:
+                                    <input type="text" inputmode="numeric" class="form-control@(invalid)" aria-describedby="@describedBy" id="@id" name="@name" value="@value"
+                                           data-digits maxlength="@(f.Code == Ek16Fields.OgrenciNo ? 15 : 6)" />
+                                    break;
+                                default:
+                                    if (wide)
+                                    {
+                                        <textarea class="form-control@(invalid)" aria-describedby="@describedBy" maxlength="300" rows="2" id="@id" name="@name" placeholder="Mahalle, cadde/sokak, bina no, daire no, ilçe/il">@value</textarea>
+                                    }
+                                    else
+                                    {
+                                        <input type="text" class="form-control@(invalid)" aria-describedby="@describedBy" maxlength="300" id="@id" name="@name" value="@value"
+                                               list="@(f.Code == Ek16Fields.Uyruk ? "nationalities" : null)" data-nationality="@(f.Code == Ek16Fields.Uyruk ? "" : null)"
+                                               placeholder="@(f.Code == Ek16Fields.OgretimYili ? "2025-2026 Bahar" : f.Code == Ek16Fields.Uyruk ? "T.C." : "")" />
+                                    }
+                                    break;
+                            }
+                            @if (error is not null)
+                            {
+                                <div class="field-error" id="@describedBy">@error</div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        @if (!disabled)
+        {
+            <div class="btn-row justify-content-end mt-3">
+                <button type="submit" class="btn btn-primary">Bilgileri kaydet</button>
+            </div>
+        }
+    </fieldset>
+</form>

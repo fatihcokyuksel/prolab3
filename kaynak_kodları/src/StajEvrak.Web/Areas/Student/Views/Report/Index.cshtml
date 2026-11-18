@@ -1,0 +1,52 @@
+@model ApplicationDetails?
+@{
+    ViewData["Title"] = "Kontrol raporu";
+    var app = Model?.Application;
+    var report = Model?.Report;
+    var doc = app?.LatestDocument;
+    var canUpload = app is not null && app.Status is not (ApplicationStatus.Approved or ApplicationStatus.Completed);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Kontrol raporu</h1>
+        @if (doc is not null)
+        {
+            <p class="meta">@doc.OriginalFileName, @doc.Version. sürüm, @doc.UploadedAt.ToTr() tarihinde yüklendi</p>
+        }
+    </div>
+    @if (app is not null) { <partial name="_StatusBadge" model="app.State" /> }
+</div>
+
+@if (report is null)
+{
+    <div class="panel">
+        <p>Rapor için önce <a asp-controller="Profile" asp-action="Index">Ek-16 bilgilerinizi girin</a>, sonra <a asp-controller="Documents" asp-action="Index">evrakınızı yükleyin</a>.</p>
+        <p class="muted mb-0">Yüklediğiniz belge, girdiğiniz bilgiler ve okul kaydınız alan alan karşılaştırılır.</p>
+    </div>
+}
+else
+{
+    if (!string.IsNullOrEmpty(app!.ReviewNote))
+    {
+        <div class="notice @(app.Status == ApplicationStatus.Invalid ? "error" : "")">
+            <p><strong>Komisyon notu:</strong> @app.ReviewNote</p>
+        </div>
+    }
+
+    <div class="verdict @ReportPresenter.VerdictCss(report)">
+        <p>
+            @ReportPresenter.Summary(report)
+            @if (ReportPresenter.HasProblems(report) && canUpload) { <text>Düzeltip yeni sürüm yükleyin.</text> }
+        </p>
+        @if (canUpload)
+        {
+            <div class="btn-row">
+                <a class="btn btn-secondary" asp-controller="Profile" asp-action="Index">Bilgilerimi düzenle</a>
+                <a class="btn btn-primary" asp-controller="Documents" asp-action="Index">Yeni sürüm yükle</a>
+            </div>
+        }
+    </div>
+
+    <partial name="_ComparisonReport" model="report" />
+}

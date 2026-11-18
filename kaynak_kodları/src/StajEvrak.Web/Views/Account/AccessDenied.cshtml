@@ -1,0 +1,13 @@
+@{
+    ViewData["Title"] = "Erişim yok";
+    var loginUrl = Url.Action("Login", "Account", new { returnUrl = ViewData["ReturnUrl"] as string });
+    var reason = User.IsInRole(Roles.Student) ? "Öğrenci hesabıyla yönetim paneline girilemez."
+        : User.IsInRole(Roles.Admin) ? "Öğrenci sayfaları yalnızca öğrencilere açıktır."
+        : "Bu sayfa için giriş yapmanız gerekiyor.";
+}
+<meta http-equiv="refresh" content="4;url=@loginUrl" />
+<div class="auth">
+    <h1>Bu sayfaya erişiminiz yok</h1>
+    <p class="intro">@reason Birkaç saniye içinde giriş sayfasına yönlendirileceksiniz. (Hata kodu 403)</p>
+    <a class="btn btn-primary" href="@loginUrl">Giriş sayfasına git</a>
+</div>

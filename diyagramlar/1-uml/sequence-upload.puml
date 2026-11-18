@@ -1,0 +1,26 @@
+@startuml sequence-upload
+!include ../_style.iuml
+hide footbox
+
+actor Öğrenci as S
+participant "Upload\nService" as U
+participant "File\nValidator" as V
+participant "Document\nReader" as R
+participant "Comparison\nService" as C
+database "Veritabanı" as DB
+
+S -> U : Evrak yükle (dosya)
+U -> V : Validate(dosya)
+V --> U : geçerli / hata
+alt dosya geçersiz
+  U --> S : pop-up uyarı
+else dosya geçerli
+  U -> DB : belgeyi kaydet (Yüklendi)
+  U -> R : Read(dosya)
+  R --> U : okunan alanlar
+  U -> C : Build(belge, giriş, veri seti)
+  C --> U : rapor
+  U -> DB : statü = İnceleniyor
+  U --> S : kontrol raporu
+end
+@enduml

@@ -1,0 +1,35 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Giriş";
+}
+<div class="auth">
+    <h1>Giriş yap</h1>
+    <p class="intro">Ek-16 Staj Kabul Formu'nu yükleyin, bilgilerinizin okul kayıtlarıyla uyuşup uyuşmadığını görün.</p>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div class="notice"><p>Şu an <strong>@User.Identity.Name</strong> olarak oturumunuz açık. Başka bir hesapla giriş yapabilirsiniz.</p></div>
+    }
+
+    <div class="panel">
+        <form asp-action="Login" method="post" novalidate>
+            <input type="hidden" asp-for="ReturnUrl" />
+            <div asp-validation-summary="ModelOnly" class="form-errors" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Identifier" class="form-label"></label>
+                <input asp-for="Identifier" class="form-control" autocomplete="username" autofocus />
+                <span asp-validation-for="Identifier" class="field-error small"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="field-error small"></span>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Giriş yap</button>
+        </form>
+    </div>
+    <p class="switch">Hesabınız yok mu? <a asp-action="Register">Öğrenci hesabı oluşturun</a></p>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

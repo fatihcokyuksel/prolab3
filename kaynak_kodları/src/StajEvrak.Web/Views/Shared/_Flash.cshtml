@@ -1,0 +1,16 @@
+@* Başarı ve uyarı mesajları sayfanın üstünde ince bir bant olarak gösterilir.
+   Hatalar (ör. reddedilen dosya) _Alerts içindeki pop-up ile gösterilir. *@
+@{
+    var type = TempData.Peek(AlertExtensions.TypeKey) as string;
+    var isBanner = type is "success" or "warning";
+}
+@if (isBanner)
+{
+    var title = TempData[AlertExtensions.TitleKey] as string;
+    var message = TempData[AlertExtensions.MessageKey] as string;
+    TempData.Remove(AlertExtensions.TypeKey);
+    <div class="flash @(type == "warning" ? "warning" : "")" role="status">
+        <p><strong>@title.</strong> @message</p>
+        <button type="button" class="close" aria-label="Kapat" onclick="this.parentElement.remove()">×</button>
+    </div>
+}

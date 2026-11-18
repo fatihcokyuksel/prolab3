@@ -1,0 +1,55 @@
+@startuml class-1-users
+' Sınıf diyagramı 1/3: kullanıcılar, başvuru ve State deseni
+!include ../_style.iuml
+
+abstract class User {
+  - PasswordHash
+  - FailedLoginCount
+  - LockoutEnd
+  + {abstract} CanAccess(app) : bool
+  + {abstract} CanBeDeletedBy(actor) : bool
+  + RegisterFailedLogin()
+}
+class Student {
+  + StudentNo
+  + CanAccess(app) : bool
+}
+class Admin {
+  + CanAccess(app) : bool
+}
+
+class InternshipApplication {
+  - Status
+  + AddDocument(by, file)
+  + Approve(by)
+  + Complete(by)
+  + CanBeModifiedBy(user) : bool
+}
+class UploadedDocument {
+  + Version
+  + FileName
+}
+
+abstract class ApplicationState <<State>> {
+  + CanBeModifiedBy(user) : bool
+}
+class UploadedState
+class ReviewingState
+class InvalidState
+class ApprovedState
+class CompletedState {
+  + CanBeModifiedBy(user) : bool
+}
+note right of CompletedState : yalnızca admin için true
+
+User <|-- Student
+User <|-- Admin
+Student "1" -- "0..1" InternshipApplication
+InternshipApplication "1" *-- "*" UploadedDocument
+InternshipApplication --> ApplicationState
+ApplicationState <|-- UploadedState
+ApplicationState <|-- ReviewingState
+ApplicationState <|-- InvalidState
+ApplicationState <|-- ApprovedState
+ApplicationState <|-- CompletedState
+@enduml

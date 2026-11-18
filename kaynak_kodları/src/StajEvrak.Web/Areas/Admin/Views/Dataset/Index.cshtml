@@ -1,0 +1,115 @@
+@model DatasetIndexViewModel
+@{
+    ViewData["Title"] = "Veri seti";
+    var exts = string.Join(",", Model.SupportedExtensions);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Okul veri seti</h1>
+        <p class="meta">Öğrencilerin kayıtlı bilgileri. Yüklenen Ek-16 belgeleri bu kayıtlarla karşılaştırılır.</p>
+    </div>
+</div>
+
+<div class="grid-aside mb-4">
+    <section class="panel">
+        <h2 class="h3">Veri seti yükle</h2>
+        <form asp-action="Upload" method="post" enctype="multipart/form-data">
+            <label class="dropzone mb-3" data-dropzone>
+                <input type="file" name="file" required accept="@exts" data-allowed="@exts" />
+                <span class="dz-title">Excel veya CSV dosyasını bırakın</span>
+                <span class="dz-hint">İlk satır sütun başlıkları olmalı</span>
+                <span class="dz-file" data-dz-file></span>
+            </label>
+            <button type="submit" class="btn btn-primary w-100">İçe aktar</button>
+        </form>
+        <p class="small-note mt-3 mb-0">Kayıtlar TC kimlik numarasına göre eklenir veya güncellenir. Kayıt olmuş öğrenciler öğrenci no veya e-posta ile otomatik eşleşir.</p>
+    </section>
+
+    <section class="panel">
+        <h2 class="h3">Beklenen sütunlar</h2>
+        <p class="small-note">Kalın olanlar zorunlu. Başlıklar büyük-küçük harf ve Türkçe karakter farkı gözetmeden eşleştirilir.</p>
+        <div class="row small">
+            <div class="col-sm-6">
+                <ul class="mb-0 ps-3">
+                    <li><strong>Ad Soyad</strong></li>
+                    <li><strong>TC Kimlik No</strong> (11 hane)</li>
+                    <li>Uyruk</li>
+                    <li><strong>Öğrenci No</strong></li>
+                    <li>Doğum Tarihi (gg.aa.yyyy)</li>
+                    <li>İkametgah Adresi</li>
+                </ul>
+            </div>
+            <div class="col-sm-6">
+                <ul class="mb-0 ps-3">
+                    <li>Bölüm</li>
+                    <li>Teslim Yılı (2025-2026)</li>
+                    <li>Önceki Staj Gün Sayısı</li>
+                    <li>E-posta</li>
+                    <li>Telefon</li>
+                    <li>Sağlık Yardımı Statüsü (1-6)</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+</div>
+
+@if (Model.ImportResult is { Succeeded: true } result && result.RowErrors.Count > 0)
+{
+    <section class="panel panel-flush mb-4">
+        <div class="panel-head">
+            <h2>Atlanan satırlar</h2>
+            <span class="small-note">@result.TotalRows satırdan @result.RowErrors.Count tanesi hatalı olduğu için içe aktarılmadı</span>
+        </div>
+        <table class="table">
+            <thead><tr><th style="width:120px">Excel satırı</th><th>Sorun</th></tr></thead>
+            <tbody>
+                @foreach (var e in result.RowErrors)
+                {
+                    <tr><td class="num">@e.RowNumber</td><td class="text-bad fw-normal">@e.Message</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+<section class="panel panel-flush">
+    <form method="get" asp-action="Index" class="panel-head">
+        <div class="d-flex gap-2 flex-wrap flex-grow-1">
+            <input name="q" value="@Model.Query" class="form-control" style="max-width:320px" placeholder="Ad, TC, öğrenci no veya e-posta" aria-label="Ara" />
+            <select name="department" class="form-select" style="max-width:280px" aria-label="Bölüm">
+                <option value="">Tüm bölümler</option>
+                @foreach (var d in Model.Departments)
+                {
+                    <option value="@d" selected="@(d == Model.Department)">@d</option>
+                }
+            </select>
+            <button class="btn btn-secondary" type="submit">Filtrele</button>
+        </div>
+        <span class="small-note">@Model.Students.Count kayıt</span>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover table-nowrap">
+            <thead>
+                <tr>
+                    <th>Ad soyad</th><th>TC kimlik no</th><th>Uyruk</th><th>Öğrenci no</th><th>Doğum tarihi</th><th>Bölüm</th>
+                    <th>Teslim yılı</th><th>Önceki staj</th><th>E-posta</th><th>Telefon</th><th>Sağlık</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Students.Count == 0)
+                {
+                    <tr class="empty-row"><td colspan="11">Kayıt yok. Yukarıdan bir Excel veya CSV dosyası yükleyin.</td></tr>
+                }
+                @foreach (var s in Model.Students)
+                {
+                    <tr title="@s.Adres">
+                        <td>@s.AdSoyad</td><td class="num">@s.TcKimlikNo</td><td>@s.Uyruk</td><td class="num">@s.OgrenciNo</td>
+                        <td class="num">@s.DogumTarihi?.ToString("dd.MM.yyyy")</td><td>@s.Bolum</td><td class="num">@s.TeslimYili</td>
+                        <td class="num">@(s.OncekiStajGun is null ? "" : $"{s.OncekiStajGun} gün")</td><td>@s.Email</td><td class="num">@s.Telefon</td><td>@s.SaglikStatusu</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

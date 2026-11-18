@@ -1,0 +1,46 @@
+@model ApplicationsIndexViewModel
+@{
+    ViewData["Title"] = Model.CompletedTab ? "Tamamlanan başvurular" : "Başvurular";
+    var action = Model.CompletedTab ? "Completed" : "Index";
+    var s = Model.Stats;
+    var openTotal = s.TotalApplications - s.Count(ApplicationStatus.Completed);
+    string? Cur(bool on) => on ? "page" : null;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Başvurular</h1>
+        <p class="meta">@(Model.CompletedTab
+            ? "Tamamlanan başvuruları öğrenci değiştiremez veya silemez. Güncelleme ve silme yalnızca admin tarafından yapılır."
+            : "Öğrencilerin yüklediği Ek-16 belgeleri ve kontrol sonuçları.")</p>
+    </div>
+</div>
+
+<ul class="tabs">
+    <li><a aria-current="@Cur(!Model.CompletedTab && Model.Filter.Status is null)" asp-action="Index" asp-route-department="@Model.Filter.Department" asp-route-q="@Model.Filter.Query">Açık başvurular <span class="count">@openTotal</span></a></li>
+    @foreach (var state in StajEvrak.Domain.Applications.States.ApplicationState.AllStates.Where(x => x.Status != ApplicationStatus.Completed))
+    {
+        <li><a aria-current="@Cur(!Model.CompletedTab && Model.Filter.Status == state.Status)" asp-action="Index" asp-route-status="@state.Status" asp-route-department="@Model.Filter.Department" asp-route-q="@Model.Filter.Query">@state.DisplayName <span class="count">@s.Count(state.Status)</span></a></li>
+    }
+    <li><a aria-current="@Cur(Model.CompletedTab)" asp-action="Completed" asp-route-department="@Model.Filter.Department" asp-route-q="@Model.Filter.Query">Tamamlandı <span class="count">@s.Count(ApplicationStatus.Completed)</span></a></li>
+</ul>
+
+<section class="panel panel-flush">
+    <form method="get" asp-action="@action" class="panel-head">
+        @if (!Model.CompletedTab && Model.Filter.Status is { } st) { <input type="hidden" name="status" value="@st" /> }
+        <div class="d-flex gap-2 flex-wrap flex-grow-1">
+            <input name="q" value="@Model.Filter.Query" class="form-control" style="max-width:320px" placeholder="Ad, kullanıcı adı, öğrenci no veya e-posta" aria-label="Ara" />
+            <select name="department" class="form-select" style="max-width:280px" aria-label="Bölüm">
+                <option value="">Tüm bölümler</option>
+                @foreach (var d in Model.Departments)
+                {
+                    <option value="@d" selected="@(d == Model.Filter.Department)">@d</option>
+                }
+            </select>
+            <button class="btn btn-secondary" type="submit">Filtrele</button>
+        </div>
+        <span class="small-note">@Model.Applications.Count başvuru</span>
+    </form>
+    @{ ViewData["EmptyText"] = "Bu filtreye uyan başvuru yok."; }
+    <partial name="_ApplicationTable" model="Model.Applications" />
+</section>

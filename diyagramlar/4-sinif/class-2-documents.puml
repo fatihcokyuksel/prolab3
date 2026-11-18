@@ -1,0 +1,44 @@
+@startuml class-2-documents
+' Sınıf diyagramı 2/3: evrak yükleme, dosya imzası ve belge okuma
+!include ../_style.iuml
+
+class DocumentUploadService {
+  + UploadAsync(file)
+}
+class UploadFileValidator {
+  + Validate(file) : Result
+}
+
+abstract class FileSignature {
+  + {abstract} MatchesHeader(bytes) : bool
+}
+class PdfSignature
+class DocxSignature
+class JpegSignature
+class PngSignature
+class DocSignature
+
+class DocumentReaderFactory {
+  + GetReader(extension)
+}
+abstract class DocumentReader <<Template Method>> {
+  + Read(path) : Result
+  # {abstract} Extract(path)
+}
+class DocxEk16Reader
+class PdfEk16Reader
+class ImageDocumentReader
+
+DocumentUploadService --> UploadFileValidator
+DocumentUploadService --> DocumentReaderFactory
+UploadFileValidator o-- FileSignature
+FileSignature <|-- PdfSignature
+FileSignature <|-- DocxSignature
+FileSignature <|-- JpegSignature
+FileSignature <|-- PngSignature
+FileSignature <|-- DocSignature
+DocumentReaderFactory o-- DocumentReader
+DocumentReader <|-- DocxEk16Reader
+DocumentReader <|-- PdfEk16Reader
+DocumentReader <|-- ImageDocumentReader
+@enduml

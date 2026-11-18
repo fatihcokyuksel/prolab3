@@ -1,0 +1,115 @@
+@model ApplicationDetails
+@{
+    var a = Model.Application;
+    var s = a.Student;
+    var status = a.Status;
+    var report = Model.Report;
+    var name = string.IsNullOrEmpty(s.FullName) ? s.UserName : s.FullName;
+    ViewData["Title"] = $"{name} başvurusu";
+}
+
+<p class="mb-2"><a asp-action="@(status == ApplicationStatus.Completed ? "Completed" : "Index")">Başvurulara dön</a></p>
+
+<div class="page-head">
+    <div>
+        <h1>@name</h1>
+        <p class="meta">Öğrenci no @s.StudentNo, @s.Email. Başvuru @a.CreatedAt.ToTr() tarihinde açıldı, son işlem @a.UpdatedAt.ToTr().</p>
+    </div>
+    <partial name="_StatusBadge" model="a.State" />
+</div>
+
+@if (!string.IsNullOrEmpty(a.ReviewNote))
+{
+    <div class="notice @(status == ApplicationStatus.Invalid ? "error" : "")"><p><strong>İnceleme notu:</strong> @a.ReviewNote</p></div>
+}
+
+<div class="grid-aside mb-4">
+    <section class="panel">
+        <h2 class="h3">Karar</h2>
+        @if (status is ApplicationStatus.Reviewing or ApplicationStatus.Invalid)
+        {
+            <form asp-action="Approve" asp-route-id="@a.Id" method="post" class="mb-3">
+                <label class="form-label" for="approveNote">Not (isteğe bağlı)</label>
+                <input id="approveNote" name="note" class="form-control mb-2" />
+                <button class="btn btn-approve w-100" type="submit">Onayla</button>
+            </form>
+        }
+        @if (status is ApplicationStatus.Reviewing or ApplicationStatus.Approved or ApplicationStatus.Completed)
+        {
+            <form asp-action="MarkInvalid" asp-route-id="@a.Id" method="post" class="mb-3">
+                <label class="form-label" for="invalidNote">Eksik veya hatalı olan ne?</label>
+                <textarea id="invalidNote" name="note" class="form-control mb-2" rows="2" required placeholder="Öğrenci bu notu görecek"></textarea>
+                <button class="btn btn-danger-quiet w-100" type="submit">@(status == ApplicationStatus.Completed ? "Yeniden aç: hatalı / eksik" : "Hatalı / eksik olarak işaretle")</button>
+            </form>
+        }
+        @if (status == ApplicationStatus.Approved)
+        {
+            <form asp-action="Complete" asp-route-id="@a.Id" method="post" data-confirm="Başvuru tamamlanacak ve öğrenci artık değişiklik yapamayacak. Devam edilsin mi?">
+                <button class="btn btn-primary w-100" type="submit">Tamamla</button>
+            </form>
+        }
+        @if (status is ApplicationStatus.AwaitingDocument or ApplicationStatus.Uploaded)
+        {
+            <p class="muted mb-0">Öğrencinin belge yüklemesi bekleniyor.</p>
+        }
+        <hr />
+        <form asp-action="Delete" asp-route-id="@a.Id" method="post" data-confirm="Başvuru ve tüm belge sürümleri kalıcı olarak silinecek. Emin misiniz?">
+            <button class="btn btn-sm btn-danger-quiet" type="submit">Başvuruyu sil</button>
+        </form>
+    </section>
+
+    <section class="panel panel-flush">
+        <div class="panel-head"><h2>Belge sürümleri</h2></div>
+        <ul class="plain px-4">
+            @if (a.Documents.Count == 0)
+            {
+                <li class="muted">Belge yok.</li>
+            }
+            @foreach (var d in a.Documents.OrderByDescending(d => d.Version))
+            {
+                <li>
+                    <div>
+                        <div>@d.Version. sürüm: @d.OriginalFileName</div>
+                        <div class="small-note">@d.UploadedAt.ToTr(), @d.SizeBytes.FileSize(), @(d.AutoReadSupported ? "otomatik okundu" : "okunmadı")</div>
+                    </div>
+                    <div class="btn-row">
+                        <a class="btn btn-sm btn-secondary" asp-action="Download" asp-route-documentId="@d.Id">İndir</a>
+                        <form asp-action="DeleteDocument" asp-route-id="@a.Id" asp-route-documentId="@d.Id" method="post" data-confirm="@d.Version. sürüm silinsin mi?">
+                            <button class="btn btn-sm btn-danger-quiet" type="submit">Sil</button>
+                        </form>
+                    </div>
+                </li>
+            }
+        </ul>
+        <div class="px-4 pb-3">
+            <h3 class="h3 mt-2">Okul kaydı</h3>
+            @if (s.DatasetStudent is { } ds)
+            {
+                <dl class="facts">
+                    <dt>Ad soyad</dt><dd>@ds.AdSoyad</dd>
+                    <dt>Bölüm</dt><dd>@ds.Bolum</dd>
+                    <dt>Teslim yılı</dt><dd>@ds.TeslimYili</dd>
+                    <dt>Önceki staj</dt><dd>@(ds.OncekiStajGun ?? 0) gün</dd>
+                </dl>
+            }
+            else
+            {
+                <p class="muted mb-0">Öğrenci veri setinde bulunamadı.</p>
+            }
+        </div>
+    </section>
+</div>
+
+<h2 class="mb-3">Kontrol raporu</h2>
+@if (report is null)
+{
+    <div class="panel"><p class="mb-0 muted">Öğrenci henüz belge yüklemedi veya Ek-16 bilgilerini girmedi.</p></div>
+}
+else
+{
+    <div class="verdict @ReportPresenter.VerdictCss(report)">
+        <p>@ReportPresenter.Summary(report)</p>
+        @if (a.LatestDocument is { } latest) { <span class="small-note">@latest.Version. sürüme göre</span> }
+    </div>
+    <partial name="_ComparisonReport" model="report" />
+}

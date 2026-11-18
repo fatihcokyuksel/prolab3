@@ -1,0 +1,53 @@
+@startuml class-3-validation
+' Sınıf diyagramı 3/3: karşılaştırma ve alan doğrulama
+!include ../_style.iuml
+
+class ComparisonService {
+  + Build(belge, giriş, veriSeti) : Report
+}
+abstract class FieldComparer {
+  + {abstract} Normalize(value)
+  + AreEqual(a, b) : bool
+}
+class TextFieldComparer
+class DateFieldComparer
+class PhoneFieldComparer
+class NumberFieldComparer
+
+class StudentProfileService {
+  + SaveAsync(values)
+}
+abstract class FieldValidator {
+  + Validate(value) : Result
+}
+class NationalIdValidator
+class PhoneValidator
+class EmailValidator
+class DateValidator
+
+class DatasetImportService {
+  + ImportAsync(file)
+}
+abstract class DatasetParser <<Template Method>> {
+  + Parse(stream)
+  # {abstract} ReadRows(stream)
+}
+class ExcelDatasetParser
+class CsvDatasetParser
+
+ComparisonService ..> FieldComparer
+FieldComparer <|-- TextFieldComparer
+FieldComparer <|-- DateFieldComparer
+FieldComparer <|-- PhoneFieldComparer
+FieldComparer <|-- NumberFieldComparer
+
+StudentProfileService ..> FieldValidator
+FieldValidator <|-- NationalIdValidator
+FieldValidator <|-- PhoneValidator
+FieldValidator <|-- EmailValidator
+FieldValidator <|-- DateValidator
+
+DatasetImportService o-- DatasetParser
+DatasetParser <|-- ExcelDatasetParser
+DatasetParser <|-- CsvDatasetParser
+@enduml

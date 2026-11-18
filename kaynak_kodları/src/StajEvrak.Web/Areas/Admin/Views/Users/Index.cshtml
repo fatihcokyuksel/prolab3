@@ -1,0 +1,113 @@
+@model UsersIndexViewModel
+@{
+    ViewData["Title"] = "Kullanıcılar";
+    var lockedCount = Model.Users.Count(u => u.IsLockedOut(Model.Now));
+    string? Cur(bool on) => on ? "page" : null;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Kullanıcılar</h1>
+        <p class="meta">Öğrenciler hesaplarını kendileri oluşturur. Bir hesabı düzenlemek, şifresini sıfırlamak veya silmek için adına tıklayın.</p>
+    </div>
+</div>
+
+<ul class="tabs">
+    <li><a aria-current="@Cur(Model.Role is null)" asp-action="Index" asp-route-q="@Model.Query">Tümü <span class="count">@(Model.StudentCount + Model.AdminCount)</span></a></li>
+    <li><a aria-current="@Cur(Model.Role == Roles.Student)" asp-action="Index" asp-route-role="@Roles.Student" asp-route-q="@Model.Query">Öğrenciler <span class="count">@Model.StudentCount</span></a></li>
+    <li><a aria-current="@Cur(Model.Role == Roles.Admin)" asp-action="Index" asp-route-role="@Roles.Admin" asp-route-q="@Model.Query">Adminler <span class="count">@Model.AdminCount</span></a></li>
+</ul>
+
+<section class="panel panel-flush mb-4">
+    <form method="get" asp-action="Index" class="panel-head">
+        @if (Model.Role is not null) { <input type="hidden" name="role" value="@Model.Role" /> }
+        <div class="d-flex gap-2 flex-wrap flex-grow-1">
+            <input name="q" value="@Model.Query" class="form-control" style="max-width:320px" placeholder="Kullanıcı adı, ad, öğrenci no veya e-posta" aria-label="Ara" />
+            <button class="btn btn-secondary" type="submit">Ara</button>
+        </div>
+        <span class="small-note">@Model.Users.Count hesap@(lockedCount > 0 ? $", {lockedCount} kilitli" : "")</span>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover table-nowrap">
+            <thead>
+                <tr><th>Kullanıcı adı</th><th>Ad soyad</th><th>E-posta</th><th>Rol</th><th>Öğrenci no</th><th>Okul kaydı</th><th>Durum</th><th></th></tr>
+            </thead>
+            <tbody>
+                @if (Model.Users.Count == 0)
+                {
+                    <tr class="empty-row"><td colspan="8">Bu aramaya uyan hesap yok.</td></tr>
+                }
+                @foreach (var u in Model.Users)
+                {
+                    var locked = u.IsLockedOut(Model.Now);
+                    var student = u as Student;
+                    <tr>
+                        <td><a class="fw-semibold" asp-action="Details" asp-route-id="@u.Id">@u.UserName</a></td>
+                        <td>@(string.IsNullOrEmpty(student?.FullName) ? "—" : student.FullName)</td>
+                        <td>@u.Email</td>
+                        <td>@(u is Admin ? "Admin" : "Öğrenci")</td>
+                        <td class="num">@(student?.StudentNo ?? "—")</td>
+                        <td>@(student is null ? "—" : student.DatasetStudentId is null ? "Eşleşmedi" : "Eşleşti")</td>
+                        <td>
+                            @if (locked)
+                            {
+                                <span class="status st-invalid">Kilitli</span>
+                            }
+                            else if (u.FailedLoginCount > 0)
+                            {
+                                <span class="status st-warn">@u.FailedLoginCount hatalı deneme</span>
+                            }
+                            else
+                            {
+                                <span class="status st-approved">Aktif</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (locked || u.FailedLoginCount > 0)
+                            {
+                                <form asp-action="Unlock" asp-route-id="@u.Id" asp-route-returnTo="list" method="post" class="d-inline">
+                                    <button class="btn btn-sm btn-secondary" type="submit">Kilidi aç</button>
+                                </form>
+                            }
+                            <a class="btn btn-sm btn-secondary" asp-action="Details" asp-route-id="@u.Id">Yönet</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel panel-flush">
+    <div class="panel-head"><h2>Son giriş denemeleri</h2><span class="small-note">Son 30 kayıt. Beş hatalı girişten sonra hesap 15 dakika kilitlenir.</span></div>
+    <div class="table-responsive">
+        <table class="table table-nowrap">
+            <thead><tr><th>Zaman</th><th>Kullanıcı adı / e-posta</th><th>IP adresi</th><th>Sonuç</th><th>Açıklama</th></tr></thead>
+            <tbody>
+                @if (Model.RecentAttempts.Count == 0)
+                {
+                    <tr class="empty-row"><td colspan="5">Henüz giriş denemesi yok.</td></tr>
+                }
+                @foreach (var a in Model.RecentAttempts)
+                {
+                    <tr>
+                        <td class="num">@a.Time.ToTr()</td>
+                        <td>
+                            @if (a.UserId is { } uid && Model.Users.Any(u => u.Id == uid))
+                            {
+                                <a asp-action="Details" asp-route-id="@uid">@a.Identifier</a>
+                            }
+                            else
+                            {
+                                @a.Identifier
+                            }
+                        </td>
+                        <td class="num">@a.IpAddress</td>
+                        <td>@if (a.Success) { <span class="status st-approved">Başarılı</span> } else { <span class="status st-invalid">Başarısız</span> }</td>
+                        <td class="muted">@a.Reason</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

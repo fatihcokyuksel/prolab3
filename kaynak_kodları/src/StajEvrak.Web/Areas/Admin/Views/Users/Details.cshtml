@@ -1,0 +1,199 @@
+@model UserDetailsViewModel
+@{
+    var u = Model.User;
+    var student = Model.Student;
+    var app = Model.Details.Application;
+    var locked = u.IsLockedOut(Model.Now);
+    var name = string.IsNullOrEmpty(student?.FullName) ? u.UserName : student.FullName;
+    var docCount = app?.Documents.Count ?? 0;
+    var lastLogin = Model.Details.LastSuccessfulLogin;
+    ViewData["Title"] = name;
+}
+
+<p class="mb-2"><a asp-action="Index">Kullanıcılara dön</a></p>
+
+<div class="page-head">
+    <div>
+        <h1>@name</h1>
+        <p class="meta">@(u is Admin ? "Admin hesabı" : "Öğrenci hesabı"), @u.CreatedAt.ToTr() tarihinde oluşturuldu.@(Model.IsSelf ? " Bu sizin hesabınız." : "")</p>
+    </div>
+    @if (locked)
+    {
+        <span class="status st-invalid">@u.LockoutEnd.ToTr() saatine kadar kilitli</span>
+    }
+    else
+    {
+        <span class="status st-approved">Aktif</span>
+    }
+</div>
+
+<div class="grid-2 mb-4">
+    <section class="panel">
+        <h2 class="h3">Hesap bilgileri</h2>
+        <form asp-action="Update" asp-route-id="@u.Id" method="post">
+            <div class="mb-3">
+                <label class="form-label" for="userName">Kullanıcı adı</label>
+                <input id="userName" name="userName" value="@u.UserName" class="form-control" required maxlength="30" autocomplete="off" />
+            </div>
+            @if (student is not null)
+            {
+                <div class="mb-3">
+                    <label class="form-label" for="fullName">Ad soyad</label>
+                    <input id="fullName" name="fullName" value="@student.FullName" class="form-control" maxlength="150" autocomplete="off" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="studentNo">Öğrenci numarası</label>
+                    <input id="studentNo" name="studentNo" value="@student.StudentNo" class="form-control" required inputmode="numeric" maxlength="15" data-digits autocomplete="off" />
+                </div>
+            }
+            <div class="mb-3">
+                <label class="form-label" for="email">E-posta</label>
+                <input id="email" name="email" type="email" value="@u.Email" class="form-control" required maxlength="200" autocomplete="off" />
+            </div>
+            @if (student is not null)
+            {
+                <p class="small-note">Öğrenci no veya e-posta değişirse hesap okul kaydıyla yeniden eşleştirilir.</p>
+            }
+            <button class="btn btn-primary" type="submit">Değişiklikleri kaydet</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2 class="h3">Durum</h2>
+        <dl class="facts">
+            <dt>Son giriş</dt>
+            <dd>@(lastLogin is null ? "Henüz giriş yapmadı" : lastLogin.Time.ToTr())</dd>
+            <dt>Hatalı deneme</dt>
+            <dd>@(locked ? "Hesap kilitli" : u.FailedLoginCount == 0 ? "Yok" : $"{u.FailedLoginCount} (5'te kilitlenir)")</dd>
+            @if (student is not null)
+            {
+                <dt>Okul kaydı</dt>
+                <dd>
+                    @if (student.DatasetStudent is { } d)
+                    {
+                        @d.AdSoyad<br /><span class="small-note">@d.Bolum, TC @d.TcKimlikNo</span>
+                    }
+                    else
+                    {
+                        <span>Eşleşmedi</span>
+                    }
+                </dd>
+                <dt>Başvuru</dt>
+                <dd>
+                    @if (app is null)
+                    {
+                        <span>Başvuru yok</span>
+                    }
+                    else
+                    {
+                        <partial name="_StatusBadge" model="app.State" />
+                        <br /><span class="small-note">@docCount belge sürümü</span>
+                        <br /><a asp-controller="Applications" asp-action="Details" asp-route-id="@app.Id">Başvuruyu aç</a>
+                    }
+                </dd>
+            }
+        </dl>
+    </section>
+</div>
+
+<div class="grid-2 mb-4">
+    <section class="panel">
+        <h2 class="h3">Şifre sıfırla</h2>
+        <p class="small-note">@(Model.IsSelf
+            ? "Şifreniz değişince yeniden giriş yapmanız gerekir."
+            : "Kullanıcının açık oturumları kapanır ve kilidi açılır. Yeni şifreyi kullanıcıya siz iletirsiniz.")</p>
+        <form asp-action="ResetPassword" asp-route-id="@u.Id" method="post">
+            <div class="mb-3">
+                <label class="form-label" for="newPassword">Yeni şifre</label>
+                <input id="newPassword" name="newPassword" type="password" class="form-control" required minlength="8" autocomplete="new-password" />
+                <div class="small-note mt-1">En az 8 karakter, en az bir harf ve bir rakam.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="confirmPassword">Yeni şifre (tekrar)</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" class="form-control" required minlength="8" autocomplete="new-password" />
+            </div>
+            <button class="btn btn-secondary" type="submit">Şifreyi sıfırla</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2 class="h3">Hesap işlemleri</h2>
+        <ul class="plain">
+            <li>
+                <div>
+                    <div>Kilidi aç</div>
+                    <div class="small-note">Hatalı deneme sayacını sıfırlar.</div>
+                </div>
+                @if (locked || u.FailedLoginCount > 0)
+                {
+                    <form asp-action="Unlock" asp-route-id="@u.Id" method="post">
+                        <button class="btn btn-sm btn-secondary" type="submit">Kilidi aç</button>
+                    </form>
+                }
+                else
+                {
+                    <span class="small-note text-nowrap">Kilitli değil</span>
+                }
+            </li>
+            @if (!Model.IsSelf)
+            {
+                <li>
+                    <div>
+                        <div>Oturumları kapat</div>
+                        <div class="small-note">Kullanıcı tüm cihazlarda yeniden giriş yapmak zorunda kalır.</div>
+                    </div>
+                    <form asp-action="EndSessions" asp-route-id="@u.Id" method="post">
+                        <button class="btn btn-sm btn-secondary" type="submit">Oturumları kapat</button>
+                    </form>
+                </li>
+            }
+            <li>
+                <div>
+                    <div>Hesabı sil</div>
+                    <div class="small-note">
+                        @if (u is Admin)
+                        {
+                            @:Admin hesapları silinemez.
+                        }
+                        else
+                        {
+                            @:Başvuru, @docCount belge sürümü ve Ek-16 bilgileri de kalıcı olarak silinir.
+                        }
+                    </div>
+                </div>
+                @if (Model.CanDelete)
+                {
+                    <form asp-action="Delete" asp-route-id="@u.Id" method="post"
+                          data-confirm="@u.UserName hesabı; başvurusu, @docCount belge sürümü ve Ek-16 bilgileriyle birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz. Devam edilsin mi?">
+                        <button class="btn btn-sm btn-danger-quiet" type="submit">Hesabı sil</button>
+                    </form>
+                }
+            </li>
+        </ul>
+    </section>
+</div>
+
+<section class="panel panel-flush">
+    <div class="panel-head"><h2>Giriş denemeleri</h2><span class="small-note">Bu hesabın son 20 kaydı</span></div>
+    <div class="table-responsive">
+        <table class="table table-nowrap">
+            <thead><tr><th>Zaman</th><th>Yazılan kullanıcı adı / e-posta</th><th>IP adresi</th><th>Sonuç</th><th>Açıklama</th></tr></thead>
+            <tbody>
+                @if (Model.Details.Attempts.Count == 0)
+                {
+                    <tr class="empty-row"><td colspan="5">Bu hesapla henüz giriş denenmedi.</td></tr>
+                }
+                @foreach (var a in Model.Details.Attempts)
+                {
+                    <tr>
+                        <td class="num">@a.Time.ToTr()</td>
+                        <td>@a.Identifier</td>
+                        <td class="num">@a.IpAddress</td>
+                        <td>@if (a.Success) { <span class="status st-approved">Başarılı</span> } else { <span class="status st-invalid">Başarısız</span> }</td>
+                        <td class="muted">@a.Reason</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

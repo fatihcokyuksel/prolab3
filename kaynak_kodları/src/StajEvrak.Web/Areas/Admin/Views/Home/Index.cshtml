@@ -1,0 +1,45 @@
+@model AdminHomeViewModel
+@{
+    ViewData["Title"] = "Panel";
+    var s = Model.Stats;
+    var queueCount = Model.Queue.Count;
+}
+
+<div class="page-head">
+    <div>
+        <h1>@(queueCount == 0 ? "İnceleme bekleyen başvuru yok" : $"{queueCount} başvuru inceleme bekliyor")</h1>
+        <p class="meta">
+            @s.StudentCount öğrenci hesabı, okul veri setinde @s.DatasetCount kayıt, toplam @s.TotalApplications başvuru.
+            @if (s.DatasetCount == 0) { <a asp-controller="Dataset" asp-action="Index">Önce veri setini yükleyin.</a> }
+        </p>
+    </div>
+    <div class="btn-row">
+        <a class="btn btn-secondary" asp-controller="Dataset" asp-action="Index">Veri seti yükle</a>
+        <a class="btn btn-primary" asp-controller="Applications" asp-action="Index">Tüm başvurular</a>
+    </div>
+</div>
+
+<ul class="tabs" aria-label="Durumlara göre başvurular">
+    @foreach (var state in StajEvrak.Domain.Applications.States.ApplicationState.AllStates)
+    {
+        <li>
+            <a asp-controller="Applications" asp-action="@(state.Status == ApplicationStatus.Completed ? "Completed" : "Index")" asp-route-status="@(state.Status == ApplicationStatus.Completed ? null : state.Status)">
+                @state.DisplayName <span class="count">@s.Count(state.Status)</span>
+            </a>
+        </li>
+    }
+</ul>
+
+<section class="panel panel-flush mb-4">
+    <div class="panel-head"><h2>İnceleme bekleyenler</h2></div>
+    @{ ViewData["EmptyText"] = "Şu an incelenecek başvuru yok. Öğrenciler belge yükledikçe burada görünecek."; }
+    <partial name="_ApplicationTable" model="Model.Queue" />
+</section>
+
+@if (Model.Recent.Count > 0)
+{
+    <section class="panel panel-flush">
+        <div class="panel-head"><h2>Diğer son başvurular</h2></div>
+        <partial name="_ApplicationTable" model="Model.Recent" />
+    </section>
+}

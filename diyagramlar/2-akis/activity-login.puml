@@ -1,0 +1,24 @@
+@startuml activity-login
+!include ../_style.iuml
+
+start
+:Kullanıcı adı / e-posta ve şifre girilir;
+if (Hesap kilitli mi?) then (evet)
+  :"Hesap kilitli" mesajı;
+  stop
+endif
+if (Şifre doğru mu?) then (evet)
+  :Sayaç sıfırlanır, giriş loglanır;
+  :Rol bilgisi oturuma yazılır;
+  :Role göre panele yönlendirilir;
+  stop
+else (hayır)
+  :Hatalı deneme sayacı +1, loglanır;
+  if (Sayaç = 5 mi?) then (evet)
+    :Hesap 15 dakika kilitlenir;
+  else (hayır)
+    :Kalan deneme hakkı gösterilir;
+  endif
+  stop
+endif
+@enduml

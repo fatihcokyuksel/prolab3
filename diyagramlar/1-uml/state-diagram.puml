@@ -1,0 +1,19 @@
+@startuml state-diagram
+!include ../_style.iuml
+hide empty description
+
+state "Yüklendi" as Y
+state "İnceleniyor" as I
+state "Hatalı / Eksik" as H
+state "Onaylandı" as O
+state "Tamamlandı" as T
+T : yalnızca admin değiştirir
+
+[*] --> Y : belge yüklendi
+Y --> I : otomatik okuma
+I --> O : admin onayı
+I --> H : admin
+H --> Y : düzeltilip yeniden yüklendi
+O --> T : admin tamamlar
+T --> [*]
+@enduml

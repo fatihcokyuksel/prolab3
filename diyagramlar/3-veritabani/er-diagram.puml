@@ -1,0 +1,71 @@
+@startuml er-diagram
+!include ../_style.iuml
+left to right direction
+
+entity "Users" as U {
+  * Id <<PK>>
+  --
+  UserType (Student/Admin)
+  UserName, Email
+  PasswordHash
+  StudentNo
+  DatasetStudentId <<FK>>
+}
+
+entity "DatasetStudents" as D {
+  * Id <<PK>>
+  --
+  TcKimlikNo <<UQ>>
+  AdSoyad, OgrenciNo
+  Bolum, Email, Telefon
+}
+
+entity "Applications" as A {
+  * Id <<PK>>
+  --
+  StudentId <<FK>>
+  Status
+}
+
+entity "Documents" as Doc {
+  * Id <<PK>>
+  --
+  ApplicationId <<FK>>
+  Version, FileName
+}
+
+entity "ExtractedFields" as E {
+  * Id <<PK>>
+  --
+  DocumentId <<FK>>
+  FieldCode, Value
+}
+
+entity "StudentProfiles" as SP {
+  * Id <<PK>>
+  --
+  StudentId <<FK, UQ>>
+}
+
+entity "ProfileFieldValues" as P {
+  * Id <<PK>>
+  --
+  ProfileId <<FK>>
+  FieldCode, Value
+}
+
+entity "LoginAttempts" as L {
+  * Id <<PK>>
+  --
+  UserId, IpAddress
+  Time, Success
+}
+
+D ||--o{ U : eşleşir
+U ||--o| A : başvurur
+A ||--o{ Doc : sürümler
+Doc ||--o{ E : okunan alanlar
+U ||--o| SP : girer
+SP ||--o{ P : alanlar
+U ||--o{ L : log
+@enduml

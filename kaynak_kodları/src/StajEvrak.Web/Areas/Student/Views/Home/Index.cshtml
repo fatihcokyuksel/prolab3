@@ -1,0 +1,143 @@
+@model StudentHomeViewModel
+@{
+    ViewData["Title"] = "Ana sayfa";
+    var student = Model.Student;
+    var app = Model.Details?.Application;
+    var report = Model.Details?.Report;
+    var latest = app?.LatestDocument;
+    var status = app?.Status ?? ApplicationStatus.AwaitingDocument;
+    var hasDoc = latest is not null;
+    var firstName = (string.IsNullOrWhiteSpace(student.FullName) ? student.UserName : student.FullName).Split(' ')[0];
+    var problems = report is not null && ReportPresenter.HasProblems(report);
+
+    // Adım çizgisi: 0 bilgiler, 1 evrak, 2 inceleme, 3 onay, 4 tamamlandı
+    var current = !Model.ProfileFilled && !hasDoc ? 0
+        : !hasDoc ? 1
+        : status switch
+        {
+            ApplicationStatus.Approved => 4,
+            ApplicationStatus.Completed => 5,
+            _ => 2
+        };
+    string StepCss(int i) => i < current ? "done" : i == current ? "current" + (i == 2 && (status == ApplicationStatus.Invalid || problems) ? " problem" : "") : "";
+
+    var (headline, lead) = (current, status) switch
+    {
+        (0, _) => ("Önce Ek-16 bilgilerinizi girin", "Staj Kabul Formu'ndaki bilgileri sisteme girin. Yükleyeceğiniz belge bu bilgilerle ve okul kaydınızla karşılaştırılacak."),
+        (1, _) => ("Ek-16 evrakınızı yükleyin", "İşverene onaylatılmış Staj Kabul Formu'nu Word, PDF veya fotoğraf olarak yükleyin."),
+        (_, ApplicationStatus.Invalid) => ("Başvurunuz düzeltme bekliyor", "Staj komisyonu belgenizde eksik veya hata buldu. Aşağıdaki notu okuyup düzeltilmiş belgeyi yükleyin."),
+        (4, _) => ("Başvurunuz onaylandı", "Belgeniz komisyon tarafından onaylandı. Tamamlandı olarak işaretlendiğinde süreç biter."),
+        (5, _) => ("Başvurunuz tamamlandı", "Staj evrakınız kabul edildi. Bu aşamadan sonra belge değiştirilemez veya silinemez."),
+        _ => ("Başvurunuz incelemede", "Belgeniz kayıtlarla karşılaştırıldı. Sorun yoksa staj komisyonu onaylayacak.")
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>Merhaba, @firstName</h1>
+        <p class="meta">
+            @if (student.DatasetStudent?.Bolum is { Length: > 0 } bolum)
+            {
+                <span>@bolum</span><span class="meta-sep" aria-hidden="true"></span>
+            }
+            <span class="num" title="Öğrenci numarası">@student.StudentNo</span>
+        </p>
+    </div>
+</div>
+
+@if (student.DatasetStudentId is null)
+{
+    <div class="notice warn">
+        <p>Hesabınız henüz okul kayıtlarıyla eşleşmedi. Staj komisyonu öğrenci listesini yüklediğinde öğrenci numaranız veya e-postanızla otomatik eşleşecek.</p>
+    </div>
+}
+
+<section class="progress-panel" aria-labelledby="durum">
+    <h2 id="durum">@headline</h2>
+    <p class="lead-text">@lead</p>
+
+    <ol class="steps">
+        <li class="@StepCss(0)"><span class="dot"></span><span class="name">Bilgiler girildi</span></li>
+        <li class="@StepCss(1)"><span class="dot"></span><span class="name">Evrak yüklendi</span>@if (latest is not null) {<span class="when">@latest.UploadedAt.ToTr()</span>}</li>
+        <li class="@StepCss(2)"><span class="dot"></span><span class="name">@(status == ApplicationStatus.Invalid ? "Düzeltme gerekiyor" : "İnceleniyor")</span>@if (current == 2) {<span class="when">Şu an</span>}</li>
+        <li class="@StepCss(3)"><span class="dot"></span><span class="name">Onaylandı</span></li>
+        <li class="@StepCss(4)"><span class="dot"></span><span class="name">Tamamlandı</span></li>
+    </ol>
+
+    <div class="next-step">
+        @if (current == 0)
+        {
+            <p>Bilgileri girdikten sonra evrakınızı yükleyebilirsiniz.</p>
+            <a class="btn btn-primary" asp-controller="Profile" asp-action="Index">Bilgilerimi gir</a>
+        }
+        else if (current == 1)
+        {
+            <p>Kabul edilen formatlar: Word (.doc, .docx), PDF, JPEG ve PNG.</p>
+            <a class="btn btn-primary" asp-controller="Documents" asp-action="Index">Evrak yükle</a>
+        }
+        else if (status == ApplicationStatus.Invalid)
+        {
+            <p><span class="text-bad">Komisyon notu:</span> @app!.ReviewNote</p>
+            <div class="btn-row">
+                <a class="btn btn-secondary" asp-controller="Report" asp-action="Index">Raporu aç</a>
+                <a class="btn btn-primary" asp-controller="Documents" asp-action="Index">Yeni sürüm yükle</a>
+            </div>
+        }
+        else if (current == 2 && problems)
+        {
+            var issues = new List<string>();
+            if (report!.MismatchCount > 0) issues.Add($"{report.MismatchCount} alan kayıtlarla uyuşmuyor");
+            if (report.MissingCount > 0) issues.Add($"{report.MissingCount} zorunlu alan boş");
+            <p>Belgenizde <span class="text-bad">@string.Join(" ve ", issues)</span>. Onaydan önce düzeltmeniz gerekiyor.</p>
+            <div class="btn-row">
+                <a class="btn btn-secondary" asp-controller="Report" asp-action="Index">Raporu aç</a>
+                <a class="btn btn-primary" asp-controller="Documents" asp-action="Index">Yeni sürüm yükle</a>
+            </div>
+        }
+        else if (current == 2)
+        {
+            <p>Belgenizde uyuşmazlık bulunmadı. Komisyonun incelemesini bekleyin.</p>
+            <a class="btn btn-secondary" asp-controller="Report" asp-action="Index">Raporu aç</a>
+        }
+        else
+        {
+            <p>@(status == ApplicationStatus.Completed ? "Teslim edilen belge: " : "Onaylanan belge: ")@latest!.OriginalFileName, @latest.Version. sürüm.</p>
+            <a class="btn btn-secondary" asp-controller="Report" asp-action="Index">Raporu aç</a>
+        }
+    </div>
+</section>
+
+<div class="grid-2">
+    <section class="panel">
+        <h3>Okul kaydınız</h3>
+        @if (student.DatasetStudent is { } d)
+        {
+            <dl class="facts">
+                <dt>Ad soyad</dt><dd>@d.AdSoyad</dd>
+                <dt>Bölüm</dt><dd>@d.Bolum</dd>
+                <dt>Teslim yılı</dt><dd>@d.TeslimYili</dd>
+                <dt>Önceki staj</dt><dd>@(d.OncekiStajGun ?? 0) gün</dd>
+            </dl>
+        }
+        else
+        {
+            <p class="muted mb-0">Henüz eşleşmedi.</p>
+        }
+    </section>
+    <section class="panel">
+        <h3>Yüklediğiniz belgeler</h3>
+        @if (app is null || app.Documents.Count == 0)
+        {
+            <p class="muted mb-0">Henüz belge yüklemediniz.</p>
+        }
+        else
+        {
+            <ul class="plain">
+                @foreach (var doc in app.Documents.OrderByDescending(x => x.Version).Take(4))
+                {
+                    <li><span>@doc.OriginalFileName <span class="small-note">(@doc.Version. sürüm)</span></span><span class="small-note">@doc.UploadedAt.ToTr()</span></li>
+                }
+            </ul>
+        }
+    </section>
+</div>

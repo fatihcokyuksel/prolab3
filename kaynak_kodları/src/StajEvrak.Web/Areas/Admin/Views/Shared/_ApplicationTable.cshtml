@@ -1,0 +1,36 @@
+@model List<InternshipApplication>
+@{
+    var empty = ViewData["EmptyText"] as string ?? "Bu listede başvuru yok.";
+}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr><th>Öğrenci</th><th>Öğrenci no</th><th>Bölüm</th><th>Belge</th><th>Durum</th><th>Son işlem</th><th></th></tr>
+        </thead>
+        <tbody>
+            @if (Model.Count == 0)
+            {
+                <tr class="empty-row"><td colspan="7">@empty</td></tr>
+            }
+            @foreach (var a in Model)
+            {
+                var latest = a.LatestDocument;
+                <tr>
+                    <td>
+                        <div class="fw-semibold">@(string.IsNullOrEmpty(a.Student.FullName) ? a.Student.UserName : a.Student.FullName)</div>
+                        <div class="small-note">@a.Student.Email</div>
+                    </td>
+                    <td class="num">@a.Student.StudentNo</td>
+                    <td>
+                        @if (a.Student.DatasetStudent is { } d) { @d.Bolum }
+                        else { <span class="small-note">Okul kaydıyla eşleşmedi</span> }
+                    </td>
+                    <td>@(latest is null ? "—" : $"{latest.Version}. sürüm, {latest.Extension.TrimStart('.')}")</td>
+                    <td><partial name="_StatusBadge" model="a.State" /></td>
+                    <td class="num">@a.UpdatedAt.ToTr()</td>
+                    <td class="text-end"><a class="btn btn-sm btn-secondary" asp-area="Admin" asp-controller="Applications" asp-action="Details" asp-route-id="@a.Id">İncele</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

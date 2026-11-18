@@ -1,0 +1,23 @@
+@startuml activity-upload
+!include ../_style.iuml
+
+start
+:Öğrenci "Evrak Yükle" ile dosya seçer;
+if (Uzantı .doc/.docx/.pdf/.jpg/.png mi?) then (hayır)
+  :Pop-up: format kabul edilmiyor;
+  stop
+endif
+if (Boyut 0 < x ≤ 10 MB mı?) then (hayır)
+  :Pop-up: boyut hatası;
+  stop
+endif
+if (Dosya imzası uzantıyla uyuşuyor mu?) then (hayır)
+  :Pop-up: sahte / bozuk dosya;
+  stop
+endif
+:Dosya kaydedilir, statü: Yüklendi;
+:Belge okunur (docx / pdf);
+:Belge, girilen bilgi ve okul kaydı karşılaştırılır;
+:Statü: İnceleniyor, rapor gösterilir;
+stop
+@enduml

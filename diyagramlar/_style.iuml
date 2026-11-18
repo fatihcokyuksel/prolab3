@@ -1,0 +1,54 @@
+' Tüm diyagramlar için ortak, sade ve okunaklı stil
+!pragma layout smetana
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam padding 4
+skinparam ArrowColor #333333
+skinparam ArrowThickness 1.3
+skinparam BackgroundColor white
+
+skinparam class {
+  BackgroundColor white
+  BorderColor #333333
+  HeaderBackgroundColor #E8EDF7
+  AttributeFontSize 14
+  StereotypeFontSize 12
+}
+skinparam classAttributeIconSize 0
+hide empty members
+hide circle
+
+skinparam activity {
+  BackgroundColor white
+  BorderColor #333333
+  DiamondBackgroundColor #E8EDF7
+  DiamondBorderColor #333333
+}
+skinparam state {
+  BackgroundColor white
+  BorderColor #333333
+}
+skinparam usecase {
+  BackgroundColor white
+  BorderColor #333333
+}
+skinparam rectangle {
+  BorderColor #333333
+}
+skinparam sequence {
+  ParticipantBackgroundColor #E8EDF7
+  ParticipantBorderColor #333333
+  LifeLineBorderColor #999999
+  ActorBorderColor #333333
+  ActorBackgroundColor white
+}
+skinparam entity {
+  BackgroundColor white
+  BorderColor #333333
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #B8A060
+}

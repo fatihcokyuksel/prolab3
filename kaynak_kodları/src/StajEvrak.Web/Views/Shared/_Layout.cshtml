@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Staj Evrak Doğrulama ve Yönetim Sistemi</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+    @{
+        var isAdmin = User.IsInRole(Roles.Admin);
+        var isStudent = User.IsInRole(Roles.Student);
+        var area = ViewContext.RouteData.Values["area"] as string;
+        var controller = ViewContext.RouteData.Values["controller"] as string;
+        string? Current(string a, string c) =>
+            string.Equals(area, a, StringComparison.OrdinalIgnoreCase) && string.Equals(controller, c, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+    }
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="brand" href="@User.HomePath()">Staj Evrak Doğrulama ve Yönetim Sistemi</a>
+            @if (isAdmin)
+            {
+                <ul class="mainnav">
+                    <li><a aria-current="@Current("Admin", "Home")" asp-area="Admin" asp-controller="Home" asp-action="Index">Panel</a></li>
+                    <li><a aria-current="@Current("Admin", "Applications")" asp-area="Admin" asp-controller="Applications" asp-action="Index">Başvurular</a></li>
+                    <li><a aria-current="@Current("Admin", "Dataset")" asp-area="Admin" asp-controller="Dataset" asp-action="Index">Veri seti</a></li>
+                    <li><a aria-current="@Current("Admin", "Users")" asp-area="Admin" asp-controller="Users" asp-action="Index">Kullanıcılar</a></li>
+                </ul>
+            }
+            else if (isStudent)
+            {
+                <ul class="mainnav">
+                    <li><a aria-current="@Current("Student", "Home")" asp-area="Student" asp-controller="Home" asp-action="Index">Ana sayfa</a></li>
+                    <li><a aria-current="@Current("Student", "Profile")" asp-area="Student" asp-controller="Profile" asp-action="Index">Ek-16 bilgilerim</a></li>
+                    <li><a aria-current="@Current("Student", "Documents")" asp-area="Student" asp-controller="Documents" asp-action="Index">Evrak yükle</a></li>
+                    <li><a aria-current="@Current("Student", "Report")" asp-area="Student" asp-controller="Report" asp-action="Index">Rapor</a></li>
+                </ul>
+            }
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="userbox">
+                    <span>@User.Identity.Name</span>
+                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="linkbtn">Çıkış</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </header>
+
+    <main role="main" class="page flex-grow-1 w-100">
+        <partial name="_Flash" />
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="inner">Staj Evrak Doğrulama ve Yönetim Sistemi</div>
+    </footer>
+
+    <partial name="_Alerts" />
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
